@@ -1,8 +1,6 @@
-
 .idea/
 
 *.pyc
-
 
 .project
 .pydevproject
@@ -18,9 +16,13 @@ genVizSimple.py
 Domain_test/
 genGif.py
 VizRDDL/
+
 # Competition/
 TestingDomain/
 
 # macOS
 .DS_Store
 
+# for local installations with "pip install ./pyRDDLgym"
+build/
+*.egg-info/

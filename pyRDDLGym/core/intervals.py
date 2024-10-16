@@ -40,7 +40,8 @@ class RDDLIntervalAnalysis:
         
     def bound(self, action_bounds: Optional[Bounds]=None, 
               per_epoch: bool=False,
-              fluent_values: Optional[Dict[str, np.ndarray]]=None) -> Bounds:
+              fixed_fluent_values: Optional[Dict[str, np.ndarray]]=None,
+              state_bounds: Optional[Bounds]=None) -> Bounds:
         '''Computes intervals on all fluents and reward for the planning problem.
         
         :param action_bounds: optional bounds on action fluents (defaults to
@@ -54,7 +55,7 @@ class RDDLIntervalAnalysis:
         '''
         
         # get initial values as bounds
-        intervals = self._bound_initial_values(fluent_values)
+        intervals = self._bound_initial_values(fixed_fluent_values, state_bounds)
         if per_epoch:
             result = {}
         
@@ -62,7 +63,7 @@ class RDDLIntervalAnalysis:
         for _ in range(self.rddl.horizon):
             self._bound_next_epoch(
                 intervals, action_bounds=action_bounds, per_epoch=per_epoch,
-                fluent_values=fluent_values)
+                fluent_values=fixed_fluent_values)
             if per_epoch:
                 for (name, (lower, upper)) in intervals.items():
                     lower_all, upper_all = result.setdefault(name, ([], []))
@@ -85,7 +86,7 @@ class RDDLIntervalAnalysis:
                 values = np.where(np.isnan(fixed_values), values, fixed_values)
         return values
         
-    def _bound_initial_values(self, fluent_values=None):
+    def _bound_initial_values(self, fluent_values=None, state_bounds=None):
         rddl = self.rddl 
         
         # initially all bounds are calculated based on the initial values
@@ -104,7 +105,11 @@ class RDDLIntervalAnalysis:
             shape = rddl.object_counts(params)
             values = np.reshape(values, newshape=shape)
             values = self._update_from_fixed(name, values, fluent_values)
-            intervals[name] = (values, values)
+
+            if state_bounds is not None and name in state_bounds:
+                intervals[name] = state_bounds[name]
+            else:
+                intervals[name] = (values, values)
         return intervals
             
     def _bound_next_epoch(self, intervals, action_bounds=None, per_epoch=False,
@@ -180,10 +185,10 @@ class RDDLIntervalAnalysis:
             result = self._bound_control(expr, intervals)
         elif etype == 'randomvar':
             result = self._bound_random(expr, intervals)
-        elif etype == 'randomvector':
-            result = self._bound_random_vector(expr, intervals)
-        elif etype == 'matrix':
-            result = self._bound_matrix(expr, intervals)
+        # elif etype == 'randomvector':
+        #     result = self._bound_random_vector(expr, intervals)
+        # elif etype == 'matrix':
+        #     result = self._bound_matrix(expr, intervals)
         else:
             raise RDDLNotImplementedError(
                 f'Internal error: expression type {etype} is not supported.\n' + 
@@ -262,6 +267,13 @@ class RDDLIntervalAnalysis:
     
     @staticmethod
     def _mask_assign(dest, mask, value, mask_value=False):
+        '''Assings a value to a destination array based on a mask.
+        
+        :param dest: the destination array to assign to
+        :param mask: the mask array to determine where to assign
+        :param value: the value to assign
+        :param mask_value: if True, the value is also masked
+        '''
         assert (np.shape(dest) == np.shape(mask))
         if np.shape(dest):
             if mask_value:
@@ -336,7 +348,7 @@ class RDDLIntervalAnalysis:
         
         else:
             raise RDDLNotImplementedError(
-                f'Arithmetic operator {op} is not supported.\n' + PST(expr))
+                f'Arithmetic operator {op} is not supported.\nint1: {int1} int2: {int2}' )
         
     def _bound_arithmetic(self, expr, intervals):
         _, op = expr.etype
