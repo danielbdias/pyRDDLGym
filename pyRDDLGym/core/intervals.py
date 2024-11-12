@@ -950,11 +950,25 @@ class RDDLIntervalAnalysis:
     def _bound_random_kron(self, expr, intervals):
         args = expr.args
         arg, = args
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Kronecker delta distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Kronecker delta distribution is not supported with mean strategy.")
+        
         return self._bound(arg, intervals)
     
     def _bound_random_dirac(self, expr, intervals):
         args = expr.args
         arg, = args
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Dirac distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Diract distribution is not supported with mean strategy.")
+        
         return self._bound(arg, intervals)
     
     def _bound_uniform(self, expr, intervals):
@@ -962,6 +976,13 @@ class RDDLIntervalAnalysis:
         a, b = args
         (la, ua) = self._bound(a, intervals)
         (lb, ub) = self._bound(b, intervals)
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Uniform distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Uniform distribution is not supported with mean strategy.")
+        
         lower = la
         upper = ub
         return (lower, upper)
@@ -970,6 +991,12 @@ class RDDLIntervalAnalysis:
         args = expr.args
         p, = args
         (lp, up) = self._bound(p, intervals)
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Bernoulli distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Bernoulli distribution is not supported with mean strategy.")
         
         lower = np.zeros(shape=np.shape(lp), dtype=np.int64)
         upper = np.ones(shape=np.shape(up), dtype=np.int64)
@@ -1007,6 +1034,12 @@ class RDDLIntervalAnalysis:
         p, = args
         (lp, up) = self._bound(p, intervals)
         
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Poisson distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Poisson distribution is not supported with mean strategy.")
+        
         lower = np.zeros(shape=np.shape(lp), dtype=np.int64)
         upper = np.full(shape=np.shape(up), fill_value=np.inf, dtype=np.float64)
         return (lower, upper)
@@ -1015,6 +1048,12 @@ class RDDLIntervalAnalysis:
         args = expr.args
         scale, = args
         (ls, us) = self._bound(scale, intervals)
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Exponential distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Exponential distribution is not supported with mean strategy.")
         
         lower = np.zeros(shape=np.shape(ls), dtype=np.float64)
         upper = np.full(shape=np.shape(us), fill_value=np.inf, dtype=np.float64)
@@ -1051,6 +1090,12 @@ class RDDLIntervalAnalysis:
         (lsh, ush) = self._bound(shape, intervals)
         (lsc, usc) = self._bound(scale, intervals)
         
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Gamma distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Gamma distribution is not supported with mean strategy.")
+        
         lower = np.zeros(shape=np.shape(lsh), dtype=np.float64)
         upper = np.full(shape=np.shape(usc), fill_value=np.inf, dtype=np.float64)
         return (lower, upper)
@@ -1060,6 +1105,12 @@ class RDDLIntervalAnalysis:
         n, p = args
         (ln, un) = self._bound(n, intervals)
         (lp, up) = self._bound(p, intervals)
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Binomial distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Binomial distribution is not supported with mean strategy.")
         
         lower = np.zeros(shape=np.shape(ln), dtype=np.int64)
         upper = np.copy(un)
@@ -1073,6 +1124,12 @@ class RDDLIntervalAnalysis:
         (ls, us) = self._bound(shape, intervals)
         (lr, ur) = self._bound(rate, intervals)
         
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Beta distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Beta distribution is not supported with mean strategy.")
+        
         lower = np.zeros(shape=np.shape(ls), dtype=np.float64)
         upper = np.ones(shape=np.shape(us), dtype=np.float64)
         return (lower, upper)
@@ -1082,6 +1139,13 @@ class RDDLIntervalAnalysis:
         p, = args
         
         (lp, up) = self._bound(p, intervals)
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Geometric distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Geometric distribution is not supported with mean strategy.")
+        
         lower = np.ones(shape=np.shape(lp), dtype=np.int64)
         upper = np.full(shape=np.shape(up), fill_value=np.inf, dtype=np.float64)
         return (lower, upper)
@@ -1092,6 +1156,12 @@ class RDDLIntervalAnalysis:
         (lsh, ush) = self._bound(shape, intervals)
         (lsc, usc) = self._bound(scale, intervals)
         
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Pareto distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Pareto distribution is not supported with mean strategy.")
+        
         lower = lsc
         upper = np.full(shape=np.shape(usc), fill_value=np.inf, dtype=np.float64)
         return (lower, upper)
@@ -1100,6 +1170,12 @@ class RDDLIntervalAnalysis:
         args = expr.args
         df, = args
         (ld, ud) = self._bound(df, intervals)
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Student distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Student distribution is not supported with mean strategy.")
         
         lower = np.full(shape=np.shape(ld), fill_value=-np.inf, dtype=np.float64)
         upper = np.full(shape=np.shape(ud), fill_value=+np.inf, dtype=np.float64)
@@ -1111,6 +1187,12 @@ class RDDLIntervalAnalysis:
         (lm, um) = self._bound(mean, intervals)
         (ls, us) = self._bound(scale, intervals)
         
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Gumbel distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Gumbel distribution is not supported with mean strategy.")
+        
         lower = np.full(shape=np.shape(lm), fill_value=-np.inf, dtype=np.float64)
         upper = np.full(shape=np.shape(um), fill_value=+np.inf, dtype=np.float64)
         return (lower, upper)
@@ -1120,6 +1202,12 @@ class RDDLIntervalAnalysis:
         mean, scale = args
         (lm, um) = self._bound(mean, intervals)
         (ls, us) = self._bound(scale, intervals)
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Cauchy distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Cauchy distribution is not supported with mean strategy.")
         
         lower = np.full(shape=np.shape(lm), fill_value=-np.inf, dtype=np.float64)
         upper = np.full(shape=np.shape(um), fill_value=+np.inf, dtype=np.float64)
@@ -1131,6 +1219,12 @@ class RDDLIntervalAnalysis:
         (lsh, ush) = self._bound(shape, intervals)
         (lsc, usc) = self._bound(scale, intervals)
         
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Gompertz distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Gompertz distribution is not supported with mean strategy.")
+        
         lower = np.zeros(shape=np.shape(lsh), dtype=np.float64)
         upper = np.full(shape=np.shape(ush), fill_value=np.inf, dtype=np.float64)
         return (lower, upper)
@@ -1139,6 +1233,12 @@ class RDDLIntervalAnalysis:
         args = expr.args
         df, = args
         (ld, ud) = self._bound(df, intervals)
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Chisquare distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Chisquare distribution is not supported with mean strategy.")
         
         lower = np.zeros(shape=np.shape(ld), dtype=np.float64)
         upper = np.full(shape=np.shape(ud), fill_value=np.inf, dtype=np.float64)
@@ -1149,6 +1249,12 @@ class RDDLIntervalAnalysis:
         a, b = args
         (la, ua) = self._bound(a, intervals)
         (lb, ub) = self._bound(b, intervals)
+        
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            raise NotImplementedError("Kumaraswamy distribution is not supported with percentile strategy.")
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            raise NotImplementedError("Kumaraswamy distribution is not supported with mean strategy.")
         
         lower = np.zeros(shape=np.shape(la), dtype=np.float64)
         upper = np.ones(shape=np.shape(ua), dtype=np.float64)
