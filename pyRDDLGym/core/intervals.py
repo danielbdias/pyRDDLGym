@@ -1,5 +1,9 @@
 import numpy as np
-from typing import Dict, List, Optional, Set, Tuple, Union
+from scipy.special import gamma
+import scipy.stats as stats
+
+from typing import Dict, Optional, Tuple
+from enum import Enum
 
 Bounds = Dict[str, Tuple[np.ndarray, np.ndarray]]
 
@@ -16,17 +20,31 @@ from pyRDDLGym.core.debug.exception import (
 from pyRDDLGym.core.debug.logger import Logger
 from pyRDDLGym.core.simulator import lngamma
 
+class IntervalAnalysisStrategy(Enum):
+    SUPPORT = 1
+    PERCENTILE = 2
+    MEAN = 3
 
 class RDDLIntervalAnalysis:
     
-    def __init__(self, rddl: RDDLPlanningModel, logger: Optional[Logger]=None) -> None:
+    def __init__(
+        self, 
+        rddl: RDDLPlanningModel, 
+        logger: Optional[Logger]=None,
+        strategy: Optional[IntervalAnalysisStrategy]=IntervalAnalysisStrategy.SUPPORT,
+        percentiles: Optional[Tuple[float, float]]=None
+        ) -> None:
         '''Creates a new interval analysis object for the given RDDL domain.
         
         :param rddl: the RDDL domain to analyze
         :param logger: to log compilation information during tracing to file
+        :param strategy: strategy used to compute bounds on fluents that has stochastic components
+        :param percentiles: percentiles used to compute bounds when strategy is set to PERCENTILE
         '''
         self.rddl = rddl
         self.logger = logger
+        self.strategy = strategy
+        self.percentiles = percentiles
         
         sorter = RDDLLevelAnalysis(rddl, allow_synchronous_state=True, logger=self.logger)
         self.cpf_levels = sorter.compute_levels()
@@ -965,6 +983,19 @@ class RDDLIntervalAnalysis:
         (lm, um) = self._bound(mean, intervals)
         (lv, uv) = self._bound(var, intervals)
         
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            # mean + std * normal_inverted_cdf(p)
+            lower_percentile, upper_percentile = self.percentiles
+            
+            lower = lm * np.sqrt(lv) * stats.norm.ppf(lower_percentile)
+            upper = um * np.sqrt(uv) * stats.norm.ppf(upper_percentile)
+            return (lower, upper)
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            # mean
+            return (lm, um)
+        
+        # SUPPORT strategy
         lower = np.full(shape=np.shape(lm), fill_value=-np.inf, dtype=np.float64)
         upper = np.full(shape=np.shape(um), fill_value=+np.inf, dtype=np.float64)
         lower = self._mask_assign(lower, (lv == 0) & (uv == 0), lm, True)
@@ -995,8 +1026,23 @@ class RDDLIntervalAnalysis:
         (lsh, ush) = self._bound(shape, intervals)
         (lsc, usc) = self._bound(scale, intervals)
         
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            # scale * (-ln(1 - p))^(1 / shape)
+            lower_percentile, upper_percentile = self.percentiles
+            
+            lower = lsc * (-np.log(1 - lower_percentile) ) ** (1 / lsh)
+            upper = usc * (-np.log(1 - upper_percentile) ) ** (1 / ush)
+            return (lower, upper)
+        
+        if self.strategy == IntervalAnalysisStrategy.MEAN:
+            # scale * gamma(1 + 1 / shape)
+            lower = lsc * gamma(1 + 1 / lsh)
+            upper = usc * gamma(1 + 1 / ush)
+            return (lower, upper)
+        
+        # SUPPORT strategy
         lower = np.zeros(shape=np.shape(lsh), dtype=np.float64)
-        upper = np.full(shape=np.shape(ush), fill_value=np.inf, dtype=np.float64)
+        upper = np.full(shape=np.shape(usc), fill_value=np.inf, dtype=np.float64)
         return (lower, upper)
     
     def _bound_gamma(self, expr, intervals):
@@ -1005,8 +1051,8 @@ class RDDLIntervalAnalysis:
         (lsh, ush) = self._bound(shape, intervals)
         (lsc, usc) = self._bound(scale, intervals)
         
-        lower = np.zeros(shape=np.shape(ls), dtype=np.float64)
-        upper = np.full(shape=np.shape(us), fill_value=np.inf, dtype=np.float64)
+        lower = np.zeros(shape=np.shape(lsh), dtype=np.float64)
+        upper = np.full(shape=np.shape(usc), fill_value=np.inf, dtype=np.float64)
         return (lower, upper)
     
     def _bound_binomial(self, expr, intervals):
