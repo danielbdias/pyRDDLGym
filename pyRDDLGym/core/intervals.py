@@ -46,6 +46,11 @@ class RDDLIntervalAnalysis:
         self.strategy = strategy
         self.percentiles = percentiles
         
+        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
+            lower, upper = self.percentiles
+            if lower < 0 or lower > 1 or upper < 0 or upper > 1 or lower > upper:
+                raise ValueError('Percentiles must be in the range [0, 1] and lower <= upper.')
+        
         sorter = RDDLLevelAnalysis(rddl, allow_synchronous_state=True, logger=self.logger)
         self.cpf_levels = sorter.compute_levels()
           
@@ -963,12 +968,7 @@ class RDDLIntervalAnalysis:
         args = expr.args
         arg, = args
         
-        if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
-            raise NotImplementedError("Dirac distribution is not supported with percentile strategy.")
-        
-        if self.strategy == IntervalAnalysisStrategy.MEAN:
-            raise NotImplementedError("Diract distribution is not supported with mean strategy.")
-        
+        # SUPPORT, PERCENTILE or MEAN strategy
         return self._bound(arg, intervals)
     
     def _bound_uniform(self, expr, intervals):
@@ -993,11 +993,20 @@ class RDDLIntervalAnalysis:
         (lp, up) = self._bound(p, intervals)
         
         if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
-            raise NotImplementedError("Bernoulli distribution is not supported with percentile strategy.")
+            lower_percentile, upper_percentile = self.percentiles
+        
+            lower = np.zeros(shape=np.shape(lp), dtype=np.int64)
+            upper = np.ones(shape=np.shape(up), dtype=np.int64)
+            
+            lower = self._mask_assign(lower, lp >= lower_percentile, 1)
+            upper = self._mask_assign(upper, up <= upper_percentile, 0)
+            
+            return (lower, upper)
         
         if self.strategy == IntervalAnalysisStrategy.MEAN:
-            raise NotImplementedError("Bernoulli distribution is not supported with mean strategy.")
+            return (lp, up)
         
+        # SUPPORT strategy
         lower = np.zeros(shape=np.shape(lp), dtype=np.int64)
         upper = np.ones(shape=np.shape(up), dtype=np.int64)
         lower = self._mask_assign(lower, lp >= 1, 1)
@@ -1235,10 +1244,10 @@ class RDDLIntervalAnalysis:
         (ld, ud) = self._bound(df, intervals)
         
         if self.strategy == IntervalAnalysisStrategy.PERCENTILE:
-            raise NotImplementedError("Chisquare distribution is not supported with percentile strategy.")
+            raise NotImplementedError("Chi-square distribution is not supported with percentile strategy.")
         
         if self.strategy == IntervalAnalysisStrategy.MEAN:
-            raise NotImplementedError("Chisquare distribution is not supported with mean strategy.")
+            raise NotImplementedError("Chi-square distribution is not supported with mean strategy.")
         
         lower = np.zeros(shape=np.shape(ld), dtype=np.float64)
         upper = np.full(shape=np.shape(ud), fill_value=np.inf, dtype=np.float64)
